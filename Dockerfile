@@ -1,27 +1,51 @@
-##Building using gradle
-#FROM gradle:jdk8-corretto-al2023 as builder
+#MEthod 1 -> simple build
+#FROM amazoncorretto:8u462-alpine3.21-jre
 #WORKDIR /app
-#COPY . .
-#RUN ["gradle" , "clean" , "bootJar" , "--no-daemon"]
-##running
-#FROM openjdk:26-slim
+#COPY build/libs/*.jar /app/app.jar
+#EXPOSE 3006
+#ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+
+#Method 2 -> multistage builder
+#FROM gradle:jdk21-alpine AS builder
+#WORKDIR /app
+#COPY gradlew build.gradle settings.gradle ./
+#COPY gradle gradle
+#RUN ./gradlew dependencies --no-daemon
+#COPY src ./src
+#RUN ./gradlew clean bootJar --no-daemon
+#
+#FROM amazoncorretto:8u462-alpine3.21-jre
 #WORKDIR /app
 #COPY --from=builder /app/build/libs/*.jar /app/app.jar
 #EXPOSE 3006
-#ENTRYPOINT ["java", "-jar", "app.jar"]
+#ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
 
+
+# ─────────────── BUILD ───────────────
 FROM gradle:jdk21 AS builder
 WORKDIR /app
+COPY gradlew ./
+COPY gradle gradle
 COPY build.gradle settings.gradle ./
-RUN gradle clean build --no-daemon || true
+RUN chmod +x gradlew
+RUN ./gradlew --no-daemon dependencies
 COPY src ./src
-RUN gradle bootJar --no-daemon
+RUN ./gradlew --no-daemon clean bootJar
 
-FROM gcr.io/distroless/java21-debian12
+# ─────────────── EXTRACT ───────────────
+FROM eclipse-temurin:21-jdk-alpine AS extractor
 WORKDIR /app
-COPY --from=builder /app/build/libs/*.jar /app/app.jar
+COPY --from=builder /app/build/libs/*.jar app.jar
+RUN java -Djarmode=layertools -jar app.jar extract
+
+# ─────────────── RUNTIME ───────────────
+FROM amazoncorretto:8u462-alpine3.21-jre
+WORKDIR /app
+COPY --from=extractor /app/dependencies/ ./
+COPY --from=extractor /app/snapshot-dependencies/ ./
+COPY --from=extractor /app/spring-boot-loader/ ./
+COPY --from=extractor /app/application/ ./
 EXPOSE 3006
-ENTRYPOINT ["java" , "-jar" , "/app/app.jar"]
-
-
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

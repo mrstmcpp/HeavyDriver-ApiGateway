@@ -14,6 +14,8 @@ java {
 	}
 }
 
+
+
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
@@ -22,6 +24,7 @@ configurations {
 
 repositories {
 	mavenCentral()
+	gradlePluginPortal()
 }
 
 ext {
@@ -47,4 +50,10 @@ dependencyManagement {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.named('bootJar') {
+	layered {
+		enabled = true
+	}
 }

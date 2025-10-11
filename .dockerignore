@@ -1,0 +1,6 @@
+# .dockerignore
+.gradle
+.git
+build
+.gitignore
+Dockerfile

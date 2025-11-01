@@ -6,37 +6,40 @@ server:
     path: /error
 
 spring:
+  main:
+    web-application-type: reactive
   application:
     name: HeavyDriver-ApiGateway
   cloud:
     gateway:
-      server:
-        webflux:
-          routes:
-            - id: UBERAUTHPROJECT
-              uri: lb://UBERAUTHPROJECT
-              predicates:
-                - Path=/api/v1/auth/**
-              filters:
-                - StripPrefix=3
-            - id: UBERBOOKINGSERVICE
-              uri: lb://UBERBOOKINGSERVICE
-              predicates:
-                - Path=/api/v1/booking/**
-              filters:
-                - StripPrefix=3
-            - id: UBERLOCATIONSERVICE
-              uri: lb://UBERLOCATIONSERVICE
-              predicates:
-                - Path=/api/v1/location/**
-              filters:
-                - StripPrefix=3
-            - id: UBERREVIEWSERVICE
-              uri: lb://UBERREVIEWSERVICE
-              predicates:
-                - Path=/api/v1/review/**
-              filters:
-                - StripPrefix=3
+      routes:
+        - id: UBERAUTHPROJECT
+          uri: lb://UBERAUTHPROJECT
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - StripPrefix=3
+
+        - id: UBERBOOKINGSERVICE
+          uri: lb://UBERBOOKINGSERVICE
+          predicates:
+            - Path=/api/v1/booking/**
+          filters:
+            - StripPrefix=3
+
+        - id: UBERLOCATIONSERVICE
+          uri: lb://UBERLOCATIONSERVICE
+          predicates:
+            - Path=/api/v1/location/**
+          filters:
+            - StripPrefix=3
+
+        - id: UBERREVIEWSERVICE
+          uri: lb://UBERREVIEWSERVICE
+          predicates:
+            - Path=/api/v1/review/**
+          filters:
+            - StripPrefix=3
 
 eureka:
   client:

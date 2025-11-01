@@ -9,7 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextImpl;
-import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -22,7 +21,6 @@ public class JwtAuthFilter implements WebFilter {
 
     private final JwtService jwtService;
 
-    @Autowired
     public JwtAuthFilter(JwtService jwtService) {
         this.jwtService = jwtService;
     }
@@ -82,10 +80,9 @@ public class JwtAuthFilter implements WebFilter {
         //    object into the reactive SecurityContext.
         return chain.filter(mutatedExchange)
                 .contextWrite(context -> {
-                    // Create a new SecurityContext with our Authentication
                     SecurityContext securityContext = new SecurityContextImpl(authentication);
-                    // Add this SecurityContext to the reactive Context
-                    return context.put(SecurityContext.class, Mono.just(securityContext));
+                    return context.put(SecurityContext.class, securityContext); // ✅ store raw object, not Mono
                 });
+
     }
 }

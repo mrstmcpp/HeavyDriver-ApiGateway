@@ -16,34 +16,36 @@ spring:
             - id: UBERAUTHPROJECT
               uri: lb://UBERAUTHPROJECT
               predicates:
-                - Path=/auth/**
+                - Path=/api/v1/auth/**
               filters:
-                - StripPrefix=1
-
+                - StripPrefix=3
             - id: UBERBOOKINGSERVICE
               uri: lb://UBERBOOKINGSERVICE
               predicates:
-                - Path=/booking/**
+                - Path=/api/v1/booking/**
               filters:
-                - StripPrefix=1
-
+                - StripPrefix=3
             - id: UBERLOCATIONSERVICE
               uri: lb://UBERLOCATIONSERVICE
               predicates:
-                - Path=/location/**
+                - Path=/api/v1/location/**
               filters:
-                - StripPrefix=1
-
+                - StripPrefix=3
             - id: UBERREVIEWSERVICE
               uri: lb://UBERREVIEWSERVICE
               predicates:
-                - Path=/review/**
+                - Path=/api/v1/review/**
               filters:
-                - StripPrefix=1
-
-
+                - StripPrefix=3
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+jwt:
+  expiry: 86400000
+  secret: mrstmmusicfasdfasdfasdfasdfasfdasdf
+
+cookie:
+  expiry: 86400000

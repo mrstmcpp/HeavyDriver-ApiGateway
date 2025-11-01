@@ -35,13 +35,13 @@ COPY src ./src
 RUN ./gradlew --no-daemon clean bootJar
 
 # ─────────────── EXTRACT ───────────────
-FROM eclipse-temurin:21-jdk-alpine AS extractor
+FROM eclipse-temurin:latest AS extractor
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
 RUN java -Djarmode=layertools -jar app.jar extract
 
 # ─────────────── RUNTIME ───────────────
-FROM amazoncorretto:8u462-alpine3.21-jre
+FROM eclipse-temurin:latest
 WORKDIR /app
 COPY --from=extractor /app/dependencies/ ./
 COPY --from=extractor /app/snapshot-dependencies/ ./

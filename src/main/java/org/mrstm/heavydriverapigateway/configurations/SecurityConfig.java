@@ -1,15 +1,22 @@
 package org.mrstm.heavydriverapigateway.configurations;
 
 import org.mrstm.heavydriverapigateway.common.JwtAuthFilter;
-import org.mrstm.heavydriverapigateway.common.JwtService; // <-- Import JwtService
+import org.mrstm.heavydriverapigateway.common.JwtService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // <-- IMPORTANT
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
 
+// --- Imports for CORS ---
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import java.util.List;
+// ------------------------
 
 @Configuration
 @EnableWebFluxSecurity
@@ -27,16 +34,37 @@ public class SecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:6969",
+                "http://localhost:6970",
+                "http://127.0.0.1:6969",
+                "http://127.0.0.1:6970"
+        ));
+        config.setAllowCredentials(true);
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
+        config.addExposedHeader("*");
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
+
+    @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
                                                          JwtAuthFilter jwtAuthFilter) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .cors(cors -> {})
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         .pathMatchers("/api/v1/auth/**").permitAll()
-                        .pathMatchers("/api/v1/booking/**").permitAll()
-                        .pathMatchers("/api/v1/review/**").permitAll()
-                        .pathMatchers("/api/v1/fare/**").permitAll()
+
                         .anyExchange().authenticated()
                 )
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())

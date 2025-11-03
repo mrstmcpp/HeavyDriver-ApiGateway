@@ -8,6 +8,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class GatewayWelcome {
     @GetMapping("/")
     public ResponseEntity<String> gatewayWelcome(){
-        return ResponseEntity.ok("Welcome bhai welcome to HeavyDriver Api Gatewayyyyyyyyyyyyy.....");
+        return ResponseEntity.ok("Welcome bhai... welcome to HeavyDriver Api Gatewayyyyyyyyyyyyy.....");
     }
 }

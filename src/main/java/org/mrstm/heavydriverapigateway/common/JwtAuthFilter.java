@@ -1,12 +1,13 @@
 package org.mrstm.heavydriverapigateway.common;
 
 import io.jsonwebtoken.Claims;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod; // Make sure this is imported
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.web.server.ServerWebExchange;
@@ -15,11 +16,16 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
+import java.util.List;
 
-//@Component
 public class JwtAuthFilter implements WebFilter {
 
     private final JwtService jwtService;
+
+    private final List<String> publicPaths = List.of(
+            "/api/v1/auth/"
+    );
+
 
     public JwtAuthFilter(JwtService jwtService) {
         this.jwtService = jwtService;
@@ -27,12 +33,24 @@ public class JwtAuthFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+
+        if (request.getMethod() == HttpMethod.OPTIONS) {
+            return chain.filter(exchange);
+        }
+
+        String path = request.getPath().toString();
+        boolean isPublic = publicPaths.stream().anyMatch(publicPath -> path.startsWith(publicPath));
+
+        if (isPublic) {
+            return chain.filter(exchange);
+        }
+
         String token = null;
 
         if (exchange.getRequest().getCookies().containsKey("JwtToken")) {
             token = exchange.getRequest().getCookies().getFirst("JwtToken").getValue();
-        }
-        else if (exchange.getRequest().getHeaders().containsKey("Authorization")) {
+        } else if (exchange.getRequest().getHeaders().containsKey("Authorization")) {
             String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 token = authHeader.substring(7);
@@ -40,20 +58,16 @@ public class JwtAuthFilter implements WebFilter {
         }
 
         if (token == null || !jwtService.isTokenValid(token)) {
-            System.out.println("Token is invalid or missing.");
+            System.out.println("Token is invalid or missing for protected route: " + path);
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
-//        System.out.println("Token is valid. Proceeding with claims extraction.");
 
         Claims claims = jwtService.extractAllClaims(token);
         String email = claims.getSubject();
         Long userId = claims.get("userId", Long.class);
         String role = claims.get("role", String.class);
-
-//        System.out.println("User Details: " + email + " " + userId + " " + role);
-
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 userId,
@@ -61,8 +75,7 @@ public class JwtAuthFilter implements WebFilter {
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
         );
 
-        //adding headerssss
-        ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+        ServerHttpRequest mutatedRequest = request.mutate()
                 .header("X-User-Id", String.valueOf(userId))
                 .header("X-User-Email", email)
                 .header("X-User-Role", role)
@@ -71,10 +84,6 @@ public class JwtAuthFilter implements WebFilter {
         ServerWebExchange mutatedExchange = exchange.mutate().request(mutatedRequest).build();
 
         return chain.filter(mutatedExchange)
-                .contextWrite(context -> {
-                    SecurityContext securityContext = new SecurityContextImpl(authentication);
-                    return context.put(SecurityContext.class, securityContext);
-                });
-
+                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
     }
 }

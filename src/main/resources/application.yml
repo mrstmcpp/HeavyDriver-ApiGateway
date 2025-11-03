@@ -41,6 +41,13 @@ spring:
           filters:
             - StripPrefix=3
 
+        - id: HD-FARESERVICE
+          uri: lb://HD-FARESERVICE
+          predicates:
+            - Path=/api/v1/**
+          filters:
+            - StripPrefix=2
+
 eureka:
   client:
     service-url:

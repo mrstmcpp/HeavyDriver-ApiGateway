@@ -6,21 +6,29 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
+import java.util.List;
+
 @Configuration
 public class GatewayCorsConfig {
 
     @Bean
-    public CorsWebFilter corsWebFilter(){
+    public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOrigin("http://localhost:6969");
-        config.addAllowedOrigin("http://localhost:6970");
-        config.addAllowedOrigin("*");
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:6969",
+                "http://localhost:6970"
+        ));
+        config.setAllowCredentials(true);
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
-        config.setAllowCredentials(true);
+        config.addExposedHeader("*"); // <-- allow frontend to read cookies, auth header
 
-        UrlBasedCorsConfigurationSource source =  new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**" , config);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config); // <-- applies to ALL routes
+
         return new CorsWebFilter(source);
     }
+
+
+
 }

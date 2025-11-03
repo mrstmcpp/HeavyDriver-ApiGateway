@@ -29,11 +29,9 @@ public class JwtAuthFilter implements WebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String token = null;
 
-        // 1. Try to get token from cookie
         if (exchange.getRequest().getCookies().containsKey("JwtToken")) {
             token = exchange.getRequest().getCookies().getFirst("JwtToken").getValue();
         }
-        // 2. If not in cookie, try to get from Authorization header
         else if (exchange.getRequest().getHeaders().containsKey("Authorization")) {
             String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -41,32 +39,29 @@ public class JwtAuthFilter implements WebFilter {
             }
         }
 
-        // 3. If token is missing or invalid, block the request
         if (token == null || !jwtService.isTokenValid(token)) {
             System.out.println("Token is invalid or missing.");
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
-        System.out.println("Token is valid. Proceeding with claims extraction.");
+//        System.out.println("Token is valid. Proceeding with claims extraction.");
 
-        // 4. Extract claims from the valid token
         Claims claims = jwtService.extractAllClaims(token);
         String email = claims.getSubject();
         Long userId = claims.get("userId", Long.class);
-        String role = claims.get("role", String.class); // e.g., "PASSENGER"
+        String role = claims.get("role", String.class);
 
-        System.out.println("User Details: " + email + " " + userId + " " + role);
+//        System.out.println("User Details: " + email + " " + userId + " " + role);
 
-        // 5. Create the Authentication object for Spring Security
-        // Note: Roles in Spring Security usually start with "ROLE_"
+
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                email, // or userId, whatever you prefer as the principal
+                userId,
                 null,
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
         );
 
-        // 6. Mutate the request to add headers for downstream services
+        //adding headerssss
         ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                 .header("X-User-Id", String.valueOf(userId))
                 .header("X-User-Email", email)
@@ -75,13 +70,10 @@ public class JwtAuthFilter implements WebFilter {
 
         ServerWebExchange mutatedExchange = exchange.mutate().request(mutatedRequest).build();
 
-        // 7. ***** THIS IS THE FIX *****
-        //    Pass the mutated exchange to the chain AND write the Authentication
-        //    object into the reactive SecurityContext.
         return chain.filter(mutatedExchange)
                 .contextWrite(context -> {
                     SecurityContext securityContext = new SecurityContextImpl(authentication);
-                    return context.put(SecurityContext.class, securityContext); // ✅ store raw object, not Mono
+                    return context.put(SecurityContext.class, securityContext);
                 });
 
     }

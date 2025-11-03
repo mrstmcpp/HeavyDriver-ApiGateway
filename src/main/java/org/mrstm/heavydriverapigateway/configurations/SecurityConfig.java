@@ -31,10 +31,12 @@ public class SecurityConfig {
                                                          JwtAuthFilter jwtAuthFilter) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> {})
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers("/api/v1/auth/**").permitAll()
                         .pathMatchers("/api/v1/booking/**").permitAll()
                         .pathMatchers("/api/v1/review/**").permitAll()
+                        .pathMatchers("/api/v1/fare/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())

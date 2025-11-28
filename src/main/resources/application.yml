@@ -16,6 +16,14 @@ spring:
             - StripPrefix=3
           order: 0
 
+        - id: UBERFILEPROJECT
+          uri: lb://UBERAUTHPROJECT
+          predicates:
+            - Path=/api/v1/driver/**
+          filters:
+            - StripPrefix=2
+          order: 0
+
         - id: UBERBOOKINGSERVICE
           uri: lb://UBERBOOKINGSERVICE
           predicates:
@@ -50,7 +58,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://hd-eureka-server:8761/eureka/
 
 
 jwt:

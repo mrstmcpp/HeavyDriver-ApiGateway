@@ -8,8 +8,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -21,7 +19,6 @@ import java.util.List;
 public class JwtAuthFilter implements WebFilter {
 
     private final JwtService jwtService;
-
     private final List<String> publicPaths = List.of(
             "/api/v1/auth/"
     );
@@ -75,11 +72,15 @@ public class JwtAuthFilter implements WebFilter {
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
         );
 
+        System.out.println("Mutatting....");
         ServerHttpRequest mutatedRequest = request.mutate()
                 .header("X-User-Id", String.valueOf(userId))
                 .header("X-User-Email", email)
                 .header("X-User-Role", role)
                 .build();
+
+        System.out.println("Mutation done....");
+
 
         ServerWebExchange mutatedExchange = exchange.mutate().request(mutatedRequest).build();
 
